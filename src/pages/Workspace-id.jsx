@@ -101,21 +101,13 @@ export default function WorkspacePage() {
             const response = await workspaceService.getMembers(workspaceId);
             setMembers(response.members || []);
 
-            // Get current user's role from the members list
             const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-            console.log('Current user from localStorage:', currentUser);
-            console.log('All members:', response.members);
-
             const currentMember = response.members?.find(m => {
-                console.log('Comparing:', m.userId, 'with', currentUser.id);
-                return m.userId === currentUser.id;
+                return m.user.id === currentUser.id;
             });
 
-            console.log('Current member found:', currentMember);
             setCurrentUserRole(currentMember?.role || null);
-            console.log('Current user role set to:', currentMember?.role || null);
         } catch (error) {
-            console.error("Error fetching members:", error);
             setMembers([]);
             setCurrentUserRole(null);
         } finally {
@@ -609,35 +601,38 @@ export default function WorkspacePage() {
                                                         </div>
                                                     </div>
 
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-                                                            <Button variant="ghost" size="icon" className="flex-shrink-0">
-                                                                <MoreVertical className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem asChild>
-                                                                <Link
-                                                                    to={`/workspaces/${workspaceId}/boards/${board.id}/edit`}
-                                                                    className="flex items-center gap-1 text-sm  hover:underline"
-                                                                >
-                                                                    <Edit className="h-4 w-4 text-muted-foreground" />
-                                                                    Chỉnh sửa
-                                                                </Link>
+                                                    {/* Only show menu if current user is owner or admin */}
+                                                    {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                                                                <Button variant="ghost" size="icon" className="flex-shrink-0">
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem asChild>
+                                                                    <Link
+                                                                        to={`/workspaces/${workspaceId}/boards/${board.id}/edit`}
+                                                                        className="flex items-center gap-1 text-sm  hover:underline"
+                                                                    >
+                                                                        <Edit className="h-4 w-4 text-muted-foreground" />
+                                                                        Chỉnh sửa
+                                                                    </Link>
 
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                className="text-destructive"
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    setBoardToDelete(board);
-                                                                }}
-                                                            >
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                Xóa board
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive"
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        setBoardToDelete(board);
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                    Xóa board
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    )}
                                                 </div>
                                             </CardHeader>
                                             <CardContent>
