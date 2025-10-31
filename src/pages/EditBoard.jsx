@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import boardService from "@/services/boardService";
+import workspaceService from "@/services/workspaceService";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,7 @@ export default function EditBoardPage() {
     const { id: workspaceId, boardId } = useParams();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
+    const [hasPermission, setHasPermission] = useState(false);
 
     // Form state
     const [name, setName] = useState("");
@@ -47,8 +49,43 @@ export default function EditBoardPage() {
     const [columns, setColumns] = useState([]);
     const [newColumnName, setNewColumnName] = useState("");
 
+    // Check permission first
+    useEffect(() => {
+        const checkPermission = async () => {
+            try {
+                const response = await workspaceService.getMembers(workspaceId);
+                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const currentMember = response.members?.find(m => m.user.id === currentUser.id);
+
+                if (!currentMember) {
+                    toast.error("Bạn không phải thành viên của workspace này");
+                    navigate(`/workspaces/${workspaceId}`);
+                    return;
+                }
+
+                if (!['owner', 'admin'].includes(currentMember.role)) {
+                    toast.error("Chỉ owner hoặc admin mới có thể chỉnh sửa board");
+                    navigate(`/workspaces/${workspaceId}`);
+                    return;
+                }
+
+                setHasPermission(true);
+            } catch (error) {
+                console.error("Error checking permission:", error);
+                toast.error("Không thể kiểm tra quyền truy cập");
+                navigate(`/workspaces/${workspaceId}`);
+            }
+        };
+
+        if (workspaceId) {
+            checkPermission();
+        }
+    }, [workspaceId, navigate]);
+
     // Fetch board data
     useEffect(() => {
+        if (!hasPermission) return;
+
         const fetchBoard = async () => {
             try {
                 setIsFetching(true);
@@ -80,7 +117,7 @@ export default function EditBoardPage() {
         if (boardId) {
             fetchBoard();
         }
-    }, [boardId]);
+    }, [boardId, hasPermission]);
 
     const handleAddColumn = () => {
         if (newColumnName.trim()) {

@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import boardService from "@/services/boardService";
+import workspaceService from "@/services/workspaceService";
 import { DashboardSidebar } from "@/components/layout/dashboardSideBar";
 import { DashboardHeader } from "@/components/layout/dashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,6 +67,7 @@ export default function CreateBoardPage() {
     const navigate = useNavigate();
     const { id: workspaceId } = useParams();
     const [isLoading, setIsLoading] = useState(false);
+    const [isCheckingPermission, setIsCheckingPermission] = useState(true);
 
     // Form state
     const [name, setName] = useState("");
@@ -74,6 +76,39 @@ export default function CreateBoardPage() {
     const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
     const [columns, setColumns] = useState(defaultColumns);
     const [newColumnName, setNewColumnName] = useState("");
+
+    // Check if user has permission to create board
+    useEffect(() => {
+        const checkPermission = async () => {
+            try {
+                const response = await workspaceService.getMembers(workspaceId);
+                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const currentMember = response.members?.find(m => m.user.id === currentUser.id);
+
+                if (!currentMember) {
+                    toast.error("Bạn không phải thành viên của workspace này");
+                    navigate(`/workspaces/${workspaceId}`);
+                    return;
+                }
+
+                if (!['owner', 'admin'].includes(currentMember.role)) {
+                    toast.error("Chỉ owner hoặc admin mới có thể tạo board");
+                    navigate(`/workspaces/${workspaceId}`);
+                    return;
+                }
+
+                setIsCheckingPermission(false);
+            } catch (error) {
+                console.error("Error checking permission:", error);
+                toast.error("Không thể kiểm tra quyền truy cập");
+                navigate(`/workspaces/${workspaceId}`);
+            }
+        };
+
+        if (workspaceId) {
+            checkPermission();
+        }
+    }, [workspaceId, navigate]);
 
     const handleAddColumn = () => {
         if (newColumnName.trim()) {
@@ -130,6 +165,26 @@ export default function CreateBoardPage() {
             setIsLoading(false);
         }
     };
+
+    // Show loading state while checking permission
+    if (isCheckingPermission) {
+        return (
+            <div className="flex min-h-screen">
+                <DashboardSidebar />
+                <div className="flex-1 ml-64">
+                    <DashboardHeader />
+                    <main className="p-6">
+                        <div className="flex items-center justify-center min-h-[400px]">
+                            <div className="text-center">
+                                <div className="h-8 w-8 mx-auto border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+                                <p className="text-muted-foreground">Đang kiểm tra quyền truy cập...</p>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen">

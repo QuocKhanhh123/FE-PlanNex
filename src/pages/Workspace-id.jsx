@@ -155,10 +155,10 @@ export default function WorkspacePage() {
 
         try {
             setIsRemovingMember(true);
-            // Use userId instead of memberId
-            await workspaceService.removeMember(workspaceId, memberToRemove.userId);
+            // Use user.id from nested user object
+            await workspaceService.removeMember(workspaceId, memberToRemove.user.id);
 
-            setMembers(members.filter(m => m.userId !== memberToRemove.userId));
+            setMembers(members.filter(m => m.user.id !== memberToRemove.user.id));
 
             toast.success(`Đã xóa ${memberToRemove.user?.fullName} khỏi workspace`);
         } catch (error) {
@@ -176,11 +176,10 @@ export default function WorkspacePage() {
 
         try {
             setIsChangingRole(true);
-            await workspaceService.updateMemberRole(workspaceId, memberToChangeRole.userId, newRole);
+            await workspaceService.updateMemberRole(workspaceId, memberToChangeRole.user.id, newRole);
 
-            // Update member in list
             setMembers(members.map(m =>
-                m.userId === memberToChangeRole.userId
+                m.user.id === memberToChangeRole.user.id
                     ? { ...m, role: newRole }
                     : m
             ));
@@ -491,14 +490,14 @@ export default function WorkspacePage() {
                                                     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
                                                     const isOwnerOrAdmin = currentUserRole && ['owner', 'admin'].includes(currentUserRole);
                                                     const targetIsNotOwner = member.role !== "owner";
-                                                    const targetIsNotCurrentUser = member.userId !== currentUser.id;
+                                                    const targetIsNotCurrentUser = member.user.id !== currentUser.id;
 
                                                     console.log('Menu render check:', {
                                                         currentUserRole,
                                                         isOwnerOrAdmin,
                                                         targetIsNotOwner,
                                                         targetIsNotCurrentUser,
-                                                        memberUserId: member.userId,
+                                                        memberUserId: member.user.id,
                                                         currentUserId: currentUser.id
                                                     });
 
@@ -543,12 +542,15 @@ export default function WorkspacePage() {
                                 <h2 className="text-2xl font-bold tracking-tight">Boards</h2>
                                 <p className="text-muted-foreground">Tổ chức công việc theo từng bảng</p>
                             </div>
-                            <Button asChild>
-                                <Link to={`/workspaces/${workspaceId}/boards/new`}>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Tạo board mới
-                                </Link>
-                            </Button>
+                            {/* Only owner and admin can create boards */}
+                            {currentUserRole && ['owner', 'admin'].includes(currentUserRole) && (
+                                <Button asChild>
+                                    <Link to={`/workspaces/${workspaceId}/boards/new`}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Tạo board mới
+                                    </Link>
+                                </Button>
+                            )}
                         </div>
 
                         {isLoadingBoards ? (
@@ -569,15 +571,23 @@ export default function WorkspacePage() {
                                 <CardContent className="flex flex-col items-center justify-center py-16">
                                     <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
                                     <h3 className="text-lg font-semibold mb-2">Chưa có board nào</h3>
-                                    <p className="text-muted-foreground text-center mb-6">
-                                        Tạo board đầu tiên để bắt đầu quản lý công việc
-                                    </p>
-                                    <Button asChild>
-                                        <Link to={`/workspaces/${workspaceId}/boards/new`}>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Tạo board mới
-                                        </Link>
-                                    </Button>
+                                    {currentUserRole && ['owner', 'admin'].includes(currentUserRole) ? (
+                                        <>
+                                            <p className="text-muted-foreground text-center mb-6">
+                                                Tạo board đầu tiên để bắt đầu quản lý công việc
+                                            </p>
+                                            <Button asChild>
+                                                <Link to={`/workspaces/${workspaceId}/boards/new`}>
+                                                    <Plus className="mr-2 h-4 w-4" />
+                                                    Tạo board mới
+                                                </Link>
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <p className="text-muted-foreground text-center">
+                                            Workspace này chưa có board nào. Chỉ owner hoặc admin mới có thể tạo board.
+                                        </p>
+                                    )}
                                 </CardContent>
                             </Card>
                         ) : (
