@@ -17,6 +17,7 @@ import SettingsPage from './pages/Setting';
 import CreateWorkspacePage from './pages/CreateWorkspace';
 import CreateBoardPage from './pages/CreateBoard';
 import EditBoardPage from './pages/EditBoard';
+import AcceptInvitationPage from './pages/AcceptInvitation';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 
@@ -138,6 +139,14 @@ function App() {
           element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/invitations/:invitationId"
+          element={
+            <ProtectedRoute>
+              <AcceptInvitationPage />
             </ProtectedRoute>
           }
         />

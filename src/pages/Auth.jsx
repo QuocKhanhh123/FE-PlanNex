@@ -41,6 +41,11 @@ export default function AuthPage() {
   const validateRegisterForm = () => {
     const newErrors = {};
 
+    // Password strength regex
+    const hasUpperCase = /[A-Z]/;
+    const hasNumber = /[0-9]/;
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
+
     if (!registerForm.fullName.trim()) {
       newErrors.fullName = "Vui lòng nhập họ và tên";
     }
@@ -59,8 +64,14 @@ export default function AuthPage() {
 
     if (!registerForm.password) {
       newErrors.password = "Vui lòng nhập mật khẩu";
-    } else if (registerForm.password.length < 6) {
-      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+    } else if (registerForm.password.length < 12) {
+      newErrors.password = "Mật khẩu phải có ít nhất 12 ký tự";
+    } else if (!hasUpperCase.test(registerForm.password)) {
+      newErrors.password = "Mật khẩu phải có ít nhất 1 chữ hoa";
+    } else if (!hasNumber.test(registerForm.password)) {
+      newErrors.password = "Mật khẩu phải có ít nhất 1 chữ số";
+    } else if (!hasSpecialChar.test(registerForm.password)) {
+      newErrors.password = "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)";
     }
 
     if (!registerForm.confirmPassword) {
@@ -331,7 +342,7 @@ export default function AuthPage() {
                     <Input
                       id="register-password"
                       type="password"
-                      placeholder="Abcd1234@"
+                      placeholder="Ví dụ: MyP@ssw0rd123"
                       value={registerForm.password}
                       onChange={(e) => handleInputChange('register', 'password', e.target.value)}
                       className={errors.password ? "border-destructive" : ""}
@@ -339,6 +350,15 @@ export default function AuthPage() {
                     {errors.password && (
                       <p className="text-sm text-destructive">{errors.password}</p>
                     )}
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p className="font-medium">Yêu cầu mật khẩu:</p>
+                      <ul className="list-disc list-inside space-y-0.5 ml-2">
+                        <li>Tối thiểu 12 ký tự</li>
+                        <li>Có ít nhất 1 chữ hoa (A-Z)</li>
+                        <li>Có ít nhất 1 chữ số (0-9)</li>
+                        <li>Có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)</li>
+                      </ul>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -346,7 +366,7 @@ export default function AuthPage() {
                     <Input
                       id="register-confirm"
                       type="password"
-                      placeholder="Abcd1234@"
+                      placeholder="Nhập lại mật khẩu"
                       value={registerForm.confirmPassword}
                       onChange={(e) => handleInputChange('register', 'confirmPassword', e.target.value)}
                       className={errors.confirmPassword ? "border-destructive" : ""}
